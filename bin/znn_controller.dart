@@ -376,7 +376,10 @@ void _printServiceStatus() {
 }
 
 bool _verifyProducerConfig(Map<dynamic, dynamic> config) {
-  if (!config.containsKey('Producer')) {
+  if (config.isEmpty) {
+    return false;
+  }
+  if (config['Producer'] == null || !config.containsKey('Producer')) {
     return false;
   }
   if (!config['Producer'].containsKey('Index') ||
@@ -399,14 +402,15 @@ bool _installLinuxPrerequisites() {
   } else {
     print('Git installation detected: ${processResult.stdout}');
   }
-  if (Process.runSync('apt', ['-y', 'install', 'linux-kernel-headers'],
+  if (Process.runSync(
+              'apt-get', ['-y', 'install', 'linux-headers-\$(uname -r)'],
               runInShell: true)
           .exitCode !=
       0) {
     print('${red('Error!')} Could not install linux-kernel-headers');
     return false;
   }
-  if (Process.runSync('apt', ['-y', 'install', 'build-essential'],
+  if (Process.runSync('apt', ['y', 'install', 'build-essential'],
               runInShell: true)
           .exitCode !=
       0) {
@@ -480,8 +484,9 @@ bool _buildFromSource(String sourcePath, String outputFile) {
         '${red('Error!')} Could not clone $znnGithubUrl into ${goZenonDir.path}');
     return false;
   }
-  processResult = Process.runSync('/usr/local/go/bin/go',
-      ['build', '-ldflags', '-s -w', '-o', outputFile, './cmd/znnd/main.go'],
+  processResult = Process.runSync('make', ['version'],
+      workingDirectory: goZenonDir.absolute.path, runInShell: true);
+  processResult = Process.runSync('make', ['znnd'],
       workingDirectory: goZenonDir.absolute.path, runInShell: true);
   if (processResult.exitCode != 0) {
     print('${red('Error!')} Could not build $znnSource');
